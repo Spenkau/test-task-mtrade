@@ -23,7 +23,7 @@ final class OrderTotal
     {
         $sum = 0.0;
         foreach ($items as $item) {
-            $sum += (int)$item['price'] * $item['qty'];
+            $sum += $item['price'] * $item['qty'];  // int() обрезало копейку
         }
 
         return round($sum, 2);
@@ -36,7 +36,7 @@ final class OrderTotal
     public static function applyDiscount(float $subtotal, int $percent): float
     {
         if ($percent < 0 || $percent > 100) {
-            throw new InvalidArgumentException("Недопустимая скидка: {$percent}%");
+            throw new \InvalidArgumentException("Недопустимая скидка: {$percent}%");
         }
 
         return round($subtotal * (100 - $percent) / 100, 2);
@@ -45,9 +45,10 @@ final class OrderTotal
     /**
      * Сумма НДС, которая уже содержится в цене (цена включает НДС).
      */
-    public static function vatIncluded(float $total): float
+    public static function vatIncluded(float $total): float // вы  здесь сами пометили что нужно из total а не из $subtotal считатььь
     {
-        return round($total * self::VAT_RATE / 100, 2);
+        // цена без НДС — 100 частей, НДС — 20 частей, итоговая цена — 120 частей. Значит, внутри итоговой цены НДС занимает 20 из 120 частей
+        return round($total * self::VAT_RATE / (100 + self::VAT_RATE), 2);
     }
 
     /**
@@ -59,10 +60,11 @@ final class OrderTotal
         $subtotal = self::subtotal($items);
         $total = self::applyDiscount($subtotal, $discountPercent);
 
+        echo "SUBTOTAL: {$subtotal}. VAT:". self::vatIncluded($total). "\n";
         return [
             'subtotal' => $subtotal,
             'total' => $total,
-            'vat' => self::vatIncluded($subtotal),
+            'vat' => self::vatIncluded($total),
         ];
     }
 }
@@ -97,7 +99,7 @@ if (PHP_SAPI === 'cli' && realpath($argv[0] ?? '') === __FILE__) {
         OrderTotal::applyDiscount(100.0, 150);
         echo "[FAIL] скидка 150% должна вызывать исключение\n";
         $failed++;
-    } catch (InvalidArgumentException) {
+    } catch (\InvalidArgumentException) {
         echo "[OK  ] скидка 150% отклонена\n";
     }
 
