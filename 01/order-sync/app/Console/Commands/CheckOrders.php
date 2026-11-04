@@ -113,7 +113,7 @@ final class CheckOrders extends Command
 
         $token = config('import.token');
 
-        if (empty($token)) {
+        if (! empty($token)) {
             $request = $request->withToken($token);
         }
 
